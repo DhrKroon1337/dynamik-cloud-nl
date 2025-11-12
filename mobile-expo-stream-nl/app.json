@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "Dynamik Aeon NL",
+    "slug": "dynamik-aeon-nl",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./app-icon.png",
+    "splash": {
+      "image": "./splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0b0f12"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./app-icon.png",
+        "backgroundColor": "#0b0f12"
+      }
+    }
+  }
+}
