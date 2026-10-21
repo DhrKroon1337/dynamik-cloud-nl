@@ -12,49 +12,31 @@ export default function App() {
   const [webHTML, setWebHTML] = useState('');
   const listRef = useRef(null);
 
-  const addMsg = (who, txt) => {
-    const m = { id: String(Date.now())+Math.random(), who, txt };
+  const addMsg = (who, txt, extra = {}) => {
+    const m = { id: String(Date.now())+Math.random(), who, txt, ...extra };
     setMsgs(prev => [...prev, m]);
     setTimeout(() => listRef.current?.scrollToEnd({ animated:true }), 50);
   };
 
-  const readStream = async (reader) => {
-    const decoder = new TextDecoder();
-    addMsg('agent', '');
-    const index = msgs.length;
-    let buf = '';
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      buf += decoder.decode(value, { stream:true });
-      for (const chunk of buf.split('\n\n')) {
-        if (!chunk.startsWith('data:')) continue;
-        const payload = chunk.slice(5).trim();
-        if (!payload) continue;
-        if (payload === '[DONE]') return;
-        setMsgs(prev => {
-          const clone = [...prev];
-          const m = clone[index] || clone[clone.length-1];
-          if (m && m.who==='agent') m.txt += payload;
-          return clone;
-        });
-      }
-      buf='';
-    }
-  };
+  // Eerdere berichten gaan mee, zodat AeonCore het gesprek onthoudt.
+  // Intent-berichten ([SPEC] e.d.) en de begroeting tellen niet mee.
+  const buildHistory = () => msgs
+    .filter(m => m.id !== 'hello' && !m.intent && !m.error && m.txt)
+    .slice(-20)
+    .map(m => ({ role: m.who === 'user' ? 'user' : 'assistant', content: m.txt }));
 
   const onSend = async () => {
     const text = input.trim();
-    if (!text) return;
+    if (!text || loading) return;
+    const history = buildHistory();
     addMsg('user', text);
     setInput('');
     setLoading(true);
     try {
-      const reader = await sendToAgent(text, {stream:true});
-      await readStream(reader);
-    } catch(e) {
-      const reply = await sendToAgent(text, {stream:false});
+      const reply = await sendToAgent(text, history);
       addMsg('agent', reply);
+    } catch(e) {
+      addMsg('agent', '⚠️ ' + e.message, { error:true });
     } finally {
       setLoading(false);
     }
@@ -62,14 +44,15 @@ export default function App() {
 
   const wrapHTML = (inner) => `<!doctype html><html><head>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
-    <script src='https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js'></script>
+    <script src='https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js'></script>
     <script>mermaid.initialize({startOnLoad:true});</script>
     <style>body{background:#0b0f12;color:#e6eef6;font-family:system-ui;padding:12px}</style>
   </head><body>${inner}</body></html>`;
 
   const onIntent = async (k) => {
+    if (loading) return;
     const idea = input.trim() || 'Laat een klein NL voorbeeld zien.';
-    addMsg('user', '['+k.toUpperCase()+'] '+idea);
+    addMsg('user', '['+k.toUpperCase()+'] '+idea, { intent:true });
     setInput('');
     setLoading(true);
     try {
@@ -77,12 +60,12 @@ export default function App() {
       if (data.type === 'html') {
         setWebHTML(wrapHTML(data.content));
         setShowWeb(true);
-        addMsg('agent', 'Ik heb een visual geopend.');
+        addMsg('agent', 'Ik heb een visual geopend.', { intent:true });
       } else {
-        addMsg('agent', String(data.content));
+        addMsg('agent', String(data.content), { intent:true });
       }
     } catch(e) {
-      addMsg('agent', 'Intent mislukt.');
+      addMsg('agent', '⚠️ ' + e.message, { intent:true, error:true });
     } finally {
       setLoading(false);
     }

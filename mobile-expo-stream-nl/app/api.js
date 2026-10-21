@@ -1,19 +1,32 @@
-// app/api.js (NL)
+// app/api.js (NL): praat met jouw backend op Render.
+// Vul hier je eigen Render-URL en hetzelfde SHARED_SECRET als op de server in.
 const BASE_URL = 'https://<jouw-render-url>';
 const SHARED_SECRET = '';
 
-export async function sendToAgent(text, {stream=false} = {}) {
-  if (stream) {
-    const res = await fetch(`${BASE_URL}/agent_stream`, { method:'POST', headers:{'Content-Type':'application/json', ...(SHARED_SECRET?{'Authorization':`Bearer ${SHARED_SECRET}`}:{})}, body: JSON.stringify({ input_text: text }) });
-    if (!res.ok || !res.body) throw new Error('Stream error');
-    return res.body.getReader();
-  } else {
-    const res = await fetch(`${BASE_URL}/agent`, { method:'POST', headers:{'Content-Type':'application/json', ...(SHARED_SECRET?{'Authorization':`Bearer ${SHARED_SECRET}`}:{})}, body: JSON.stringify({ input_text: text }) });
-    const data = await res.json();
-    return data.response;
+async function post(path, body) {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${SHARED_SECRET}`,
+    },
+    body: JSON.stringify(body),
+  });
+  let data = null;
+  try { data = await res.json(); } catch (e) { /* geen JSON */ }
+  if (!res.ok) {
+    // De backend stuurt een Nederlandse foutmelding mee in `detail`
+    throw new Error((data && data.detail) || `Serverfout (${res.status})`);
   }
+  return data;
 }
+
+// history: [{ role: 'user' | 'assistant', content: '...' }]
+export async function sendToAgent(text, history = []) {
+  const data = await post('/agent', { input_text: text, history });
+  return data.response;
+}
+
 export async function callIntent(kind, idea) {
-  const res = await fetch(`${BASE_URL}/intent`, { method:'POST', headers:{'Content-Type':'application/json', ...(SHARED_SECRET?{'Authorization':`Bearer ${SHARED_SECRET}`}:{})}, body: JSON.stringify({ kind, idea }) });
-  return res.json();
+  return post('/intent', { kind, idea });
 }

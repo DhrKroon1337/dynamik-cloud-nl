@@ -4,14 +4,10 @@
     "slug": "dynamik-aeon-nl",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./app-icon.png",
+    "userInterfaceStyle": "dark",
     "splash": {
-      "image": "./splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#0b0f12"
-    },
-    "updates": {
-      "fallbackToCacheTimeout": 0
     },
     "assetBundlePatterns": [
       "**/*"
@@ -20,10 +16,7 @@
       "supportsTablet": true
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./app-icon.png",
-        "backgroundColor": "#0b0f12"
-      }
+      "package": "com.dhrkroon1337.dynamikaeon"
     }
   }
 }

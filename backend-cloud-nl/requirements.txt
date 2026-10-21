@@ -1,5 +1,4 @@
-fastapi
-uvicorn
-openai
-python-dotenv
-httpx
+anthropic==1.11.0
+fastapi==0.142.2
+uvicorn==0.54.0
+python-dotenv==1.2.4
